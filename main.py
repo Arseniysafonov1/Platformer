@@ -3,13 +3,15 @@ import pygame
 from pygame import *
 from player import *
 from blocks import *
+from win import *
 import random
-
+from enemy import *
 # Объявляем переменные
 WIN_WIDTH = 800  # Ширина создаваемого окна
 WIN_HEIGHT = 640  # Высота
 DISPLAY = (WIN_WIDTH, WIN_HEIGHT)  # Группируем ширину и высоту в одну переменную
 BACKGROUND_COLOR = "#00A2E8"
+win = 0
 
 
 class Camera(object):
@@ -49,13 +51,14 @@ def main():
 
     entities = pygame.sprite.Group()  # Все объекты
     platforms = []  # то, во что мы будем врезаться или опираться
+    enemies = []
 
     entities.add(hero)
 
     level = [
         "----------------------------------",
         "-                                -",
-        "-                                -",
+        "-                              * -",
         "-                                -",
         "-                                -",
         "-                                -",
@@ -80,12 +83,21 @@ def main():
     generate_level(level, len(level[0]))
     timer = pygame.time.Clock()
     x = y = 0  # координаты
+    first = True
     for row in level:  # вся строка
         for col in row:  # каждый символ
             if col == "-":
                 pf = Platform(x, y)
                 entities.add(pf)
                 platforms.append(pf)
+            if col == "*":
+                win = Win(x+1, y)
+                entities.add(win)
+                first = False
+            if col == "/":
+                en = Enemy(x, y)
+                entities.add(en)
+                enemies.append(en)
 
             x += PLATFORM_WIDTH  # блоки платформы ставятся на ширине блоков
         y += PLATFORM_HEIGHT  # то же самое и с высотой
@@ -118,12 +130,15 @@ def main():
         screen.blit(bg, (0, 0))  # Каждую итерацию необходимо всё перерисовывать
 
         camera.update(hero)  # центризируем камеру относительно персонажа
-        hero.update(left, right, up, platforms)  # передвижение
+        hero.update(left, right, up, platforms, win, enemies)  # передвижение
         # entities.draw(screen) # отображение
         for e in entities:
             screen.blit(e.image, camera.apply(e))
 
         pygame.display.update()  # обновление и вывод всех изменений на экран
+        if hero.isWin or hero.isLose:
+            pygame.quit()
+            break
 
 
 def generate_level(level, l):
@@ -131,11 +146,15 @@ def generate_level(level, l):
     while counter < 40:
         x = random.randint(0, len(level) - 1)
         y = random.randint(0, len(level[x]) - 1)
-        if (level[x][y] != "-") and x > 2 and y > 2:
+        if (level[x][y] == " ") and x > 2 and y > 2:
             level[x] = level[x][:y] + "-" + level[x][y - 1:]
             counter += 1
     for i in range(len(level)):
         level[i] = level[i][:l - 1] + "-"
+    for i in range(len(level)):
+        if level[-2][i] != "-" and i != 1 and i != 2:
+            if not random.randint(0, 2):
+                level[-2] = level[-2][:i] + "/" + level[-2][i-1:]
 
 
 if __name__ == "__main__":

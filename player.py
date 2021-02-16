@@ -28,6 +28,8 @@ ANIMATION_STAY = [('%s/mario/0.png' % ICON_DIR, 0.1)]
 
 
 class Player(sprite.Sprite):
+    isWin = False
+    isLose = False
     def __init__(self, x, y):
         sprite.Sprite.__init__(self)
         self.xvel = 0  # скорость перемещения. 0 - стоять на месте
@@ -65,7 +67,7 @@ class Player(sprite.Sprite):
         self.boltAnimJump = pyganim.PygAnimation(ANIMATION_JUMP)
         self.boltAnimJump.play()
 
-    def update(self, left, right, up, platforms):
+    def update(self, left, right, up, platforms, win, enemies):
 
         if up:
             if self.onGround:  # прыгаем, только когда можем оттолкнуться от земли
@@ -100,12 +102,12 @@ class Player(sprite.Sprite):
 
         self.onGround = False;  # Мы не знаем, когда мы на земле((
         self.rect.y += self.yvel
-        self.collide(0, self.yvel, platforms)
+        self.collide(0, self.yvel, platforms, win, enemies)
 
         self.rect.x += self.xvel  # переносим свои положение на xvel
-        self.collide(self.xvel, 0, platforms)
+        self.collide(self.xvel, 0, platforms, win, enemies)
 
-    def collide(self, xvel, yvel, platforms):
+    def collide(self, xvel, yvel, platforms, win, enemies):
         for p in platforms:
             if sprite.collide_rect(self, p):  # если есть пересечение платформы с игроком
 
@@ -123,3 +125,9 @@ class Player(sprite.Sprite):
                 if yvel < 0:  # если движется вверх
                     self.rect.top = p.rect.bottom  # то не движется вверх
                     self.yvel = 0  # и энергия прыжка пропадает
+        for e in enemies:
+            if sprite.collide_rect(self, e):
+                self.isLose = True
+                print("Lose!")
+        if sprite.collide_circle(self, win):
+            self.isWin = True
